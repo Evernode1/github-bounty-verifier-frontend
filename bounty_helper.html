@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GitHub Bounty Verifier Helper</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fafaf7;--card:#fff;--fg:#1d1d1b;--mut:#6b6b66;--bd:#e2e1da;--ac:#2f6f4f;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161715;--card:#1f201e;--fg:#ecebe6;--mut:#9b9a93;--bd:#33342f;--ac:#6fcf9b;--bad:#ff8a80}}
+:root[data-theme="dark"]{--bg:#161715;--card:#1f201e;--fg:#ecebe6;--mut:#9b9a93;--bd:#33342f;--ac:#6fcf9b;--bad:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 8px}
+p.s{color:var(--mut);margin:0 0 16px;font-size:14px}
+section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+button{margin-top:8px;padding:9px 14px;border:0;border-radius:8px;background:var(--ac);color:var(--bg);font:inherit;font-weight:600}
+pre{margin:10px 0 0;padding:10px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;white-space:pre-wrap;word-break:break-all;overflow-x:auto;font-size:13px}
+.ok{color:var(--ac)}.no{color:var(--bad)}
+ol{padding-left:20px;margin:0}li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>GitHub Bounty Verifier</h1>
+<p class="s">Helper tools for contributors and creators (GenLayer, paid in GEN).</p>
+
+<section>
+<h2>How it works</h2>
+<ol>
+<li>Creator escrows a GEN reward for a repo.</li>
+<li>Contributor adds their wallet line to the PR description.</li>
+<li>After merge, contributor submits the PR link with a small GEN deposit.</li>
+<li>Validators read GitHub and an LLM checks the requirements.</li>
+<li>If approved, the PR is locked forever and the winner claims the payout.</li>
+</ol>
+</section>
+
+<section>
+<h2>1. PR description wallet line</h2>
+<label for="w">Your wallet address</label>
+<input id="w" placeholder="0x..." autocomplete="off" spellcheck="false">
+<button id="wb">Generate line</button>
+<pre id="wo">Paste your address above.</pre>
+</section>
+
+<section>
+<h2>2. PR URL checker</h2>
+<label for="u">Pull request URL</label>
+<input id="u" placeholder="https://github.com/owner/repo/pull/12" autocomplete="off" spellcheck="false">
+<button id="ub">Check</button>
+<pre id="uo">Enter a URL above.</pre>
+</section>
+
+<section>
+<h2>3. GEN converter</h2>
+<label for="g">Amount in GEN</label>
+<input id="g" inputmode="decimal" placeholder="0.1">
+<button id="gb">Convert</button>
+<pre id="go">Contract uses base units (1 GEN = 10^18).</pre>
+</section>
+</main>
+<script>
+var PR=/^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/pull\/(\d+)$/;
+function $(i){return document.getElementById(i)}
+$("wb").onclick=function(){
+  var a=$("w").value.trim();
+  $("wo").className=/^0x[0-9a-fA-F]{40}$/.test(a)?"ok":"no";
+  $("wo").textContent=/^0x[0-9a-fA-F]{40}$/.test(a)?"Wallet: "+a+"\n\nPut this line in the PR description.":"Not a valid 0x address (needs 0x + 40 hex characters).";
+};
+$("ub").onclick=function(){
+  var m=PR.exec($("u").value.trim());
+  if(!m){$("uo").className="no";$("uo").textContent="Invalid. Use https://github.com/<owner>/<repo>/pull/<number> with no extra path or query.";return}
+  $("uo").className="ok";
+  $("uo").textContent="Valid.\nRepo: "+m[1]+"/"+m[2]+"\nPR #: "+m[3]+"\nLock key: "+(m[1]+"/"+m[2]+"#"+m[3]).toLowerCase();
+};
+$("gb").onclick=function(){
+  var s=$("g").value.trim();
+  if(!/^\d+(\.\d{1,18})?$/.test(s)){$("go").className="no";$("go").textContent="Enter a positive number with up to 18 decimals.";return}
+  var p=s.split("."),f=((p[1]||"")+"000000000000000000").slice(0,18);
+  var v=(p[0]+f).replace(/^0+(?=\d)/,"");
+  $("go").className="ok";$("go").textContent=s+" GEN = "+v+" base units";
+};
+</script>
+</body>
+</html>
